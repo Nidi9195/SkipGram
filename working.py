@@ -8,7 +8,7 @@ import numpy as np
 
 f1 = "text8.zip"
 window_size = 1
-size = 20000 #no of most common words
+size = 200000 #no of most common words
 epoch = 4
 lr = 0.1
 inputlayer_neurons = size
@@ -90,6 +90,13 @@ def generate_word_vec(word):
     vec[index] = 1
     return index, vec
 
+def gen_ind(word):
+    try:
+        index = word_index_dict[word]
+    except:
+        index = 0
+    return index
+
 def main():
     vocabulary = read_data(f1) #list of tokenized words from corpus
     len_vocabulary = len(vocabulary)
@@ -105,36 +112,36 @@ def main():
     print("Training begins!")
 
     for j in range(len_vocabulary-10):
-        print("Length of vocabulary is ", len_vocabulary,"and run is",j)
+        #print("Length of vocabulary is ", len_vocabulary,"and run is",j)
         i = random.randint(1,(len_vocabulary-10))
         word = vocabulary[random.randint(1,(len_vocabulary-10))]
-        i1, word_vec_i = generate_word_vec(word)
+        i1 = gen_ind(word)
         ops = []
         ops_indices = []
         ops_words = []
         for w_i in range(1,window_size):
-            ops.append(generate_word_vec(vocabulary[i+w_i]))
+            #ops.append(generate_word_vec(vocabulary[i+w_i]))
             ops_words.append(vocabulary[i+w_i])
             try:
                 ops_indices.append(word_index_dict[vocabulary[i+w_i]])
             except:
                 ops_indices.append(0)
             
-            ops.append(generate_word_vec(vocabulary[i-w_i]))
+            #ops.append(generate_word_vec(vocabulary[i-w_i]))
             ops_words.append(vocabulary[i+w_i])
             try:
                 ops_indices.append(word_index_dict[vocabulary[i-w_i]])
             except:
                 ops_indices.append(0)
-        train(word_vec_i, ops, i1, ops_indices, ops_words)
+        train(ops, i1, ops_indices, ops_words)
 
     print("Done training")
 
-def train(x, outputs, ip_index, op_indices, op_words):
+def train(outputs, ip_index, op_indices, op_words):
     global lr, inputlayer_neurons, hiddenlayer_neurons, output_neurons, wh, wout, words_p_list
-    y = np.array(outputs)
-    no_of_trials = y.shape[0]
-    X = np.array([x])
+    #y = np.array(outputs)
+    no_of_trials = len(op_indices)
+    #X = np.array([x])
     ip = ip_index
 
     for j in range(no_of_trials):
@@ -147,15 +154,19 @@ def train(x, outputs, ip_index, op_indices, op_words):
             neg_s_words.append(words_p_list[random.randint(0,1e7)])
 
         for var in neg_s_words:
-            xx, y_g = generate_word_vec(var)
+            #xx, y_g = generate_word_vec(var)
             var1 = y1
-            neg_sum += (EIj(ip,var1,y_g)*wout.T[var1])
-            wout.T[var1] -= lr*EIj(ip,var1,y_g)*(X[0].dot(wh))
+            if(word_index_dict[var]==y1):
+                yy = 1
+            else:
+                yy = 0
+            neg_sum += (EIj(ip,var1,yy)*wout.T[var1])
+            wout.T[var1] -= lr*EIj(ip,var1,yy)*wh[ip]
         wh[ip] -= lr*neg_sum
 
 
 def EIj(ip,j,t):
-    return (sigmoid(wout.T[j].dot(wh[ip].T)) - t[j])
+    return (sigmoid(wout.T[j].dot(wh[ip].T)) - t)
 
 if __name__ == "__main__":
     main()
