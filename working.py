@@ -8,17 +8,17 @@ import numpy as np
 
 f1 = "text8.zip"
 window_size = 1
-size = 200000 #no of most common words
+size = 253855 #no of most common words
 epoch = 4
 lr = 0.1
 inputlayer_neurons = size
-hiddenlayer_neurons = 300
+hiddenlayer_neurons = 100
 output_neurons = size
 word_index_dict = {}
 count = [['UNK', -1]]
 table_size = 1e7
 words_p_list = []
-no_negative_samples = 1
+no_negative_samples = 2
 
 wh=np.random.uniform(size=(inputlayer_neurons,hiddenlayer_neurons))
 wout=np.random.uniform(size=(hiddenlayer_neurons,output_neurons))
@@ -110,32 +110,51 @@ def main():
     #print("Prob list is",len(p))
     #print("Count is ", len(count))
     print("Training begins!")
+    for vvv in range(4):
+        print("Running for epoch number :", vvv)
 
-    for j in range(len_vocabulary-10):
-        #print("Length of vocabulary is ", len_vocabulary,"and run is",j)
-        i = random.randint(1,(len_vocabulary-10))
-        word = vocabulary[random.randint(1,(len_vocabulary-10))]
-        i1 = gen_ind(word)
-        ops = []
-        ops_indices = []
-        ops_words = []
-        for w_i in range(1,window_size):
-            #ops.append(generate_word_vec(vocabulary[i+w_i]))
-            ops_words.append(vocabulary[i+w_i])
-            try:
-                ops_indices.append(word_index_dict[vocabulary[i+w_i]])
-            except:
-                ops_indices.append(0)
+        for j in range(len_vocabulary-10):
+            #print("Length of vocabulary is ", len_vocabulary,"and run is",j)
+            i = random.randint(1,(len_vocabulary-10))
+            word = vocabulary[random.randint(1,(len_vocabulary-10))]
+            i1 = gen_ind(word)
+            ops = []
+            ops_indices = []
+            ops_words = []
+            for w_i in range(1,window_size):
+                #ops.append(generate_word_vec(vocabulary[i+w_i]))
+                ops_words.append(vocabulary[i+w_i])
+                try:
+                    ops_indices.append(word_index_dict[vocabulary[i+w_i]])
+                except:
+                    ops_indices.append(0)
             
-            #ops.append(generate_word_vec(vocabulary[i-w_i]))
-            ops_words.append(vocabulary[i+w_i])
-            try:
-                ops_indices.append(word_index_dict[vocabulary[i-w_i]])
-            except:
-                ops_indices.append(0)
-        train(ops, i1, ops_indices, ops_words)
+                #ops.append(generate_word_vec(vocabulary[i-w_i]))
+                ops_words.append(vocabulary[i+w_i])
+                try:
+                    ops_indices.append(word_index_dict[vocabulary[i-w_i]])
+                except:
+                    ops_indices.append(0)
+            train(ops, i1, ops_indices, ops_words)
 
-    print("Done training")
+        print("Done training")
+    
+    with open('vocab.txt','r') as f:
+        data = f.readlines()
+
+    f2 = open('vec_2_neg_pls.txt','a')
+    for var in data:
+        w1 = var.replace('\n','')
+        f2.write(w1)
+        f2.write(" ")
+        try:
+            index1 = word_index_dict[w1]
+            #print("Index is: ",index1)
+        except:
+            index1 = 0
+        #print("Index is: ", index1)
+        np.savetxt(f2, wh[index1], newline = " ",fmt = '%f')
+        f2.write("\r\n")
 
 def train(outputs, ip_index, op_indices, op_words):
     global lr, inputlayer_neurons, hiddenlayer_neurons, output_neurons, wh, wout, words_p_list
@@ -156,7 +175,11 @@ def train(outputs, ip_index, op_indices, op_words):
         for var in neg_s_words:
             #xx, y_g = generate_word_vec(var)
             var1 = y1
-            if(word_index_dict[var]==y1):
+            try:
+                yindex = word_index_dict[var]
+            except:
+                yindex = 0
+            if(yindex==y1):
                 yy = 1
             else:
                 yy = 0
